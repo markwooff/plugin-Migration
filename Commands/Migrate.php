@@ -31,7 +31,8 @@ class Migrate extends ConsoleCommand
         $this->setName('migration:measurable');
         $this->setDescription('Migrates a measurable/website from one Matomo instance to another Matomo');
 
-        $this->addOption('source-idsite', null,InputOption::VALUE_REQUIRED, 'Source Site ID you want to migrate');
+        $this->addOption('source-idsite', null,InputOption::VALUE_REQUIRED, 'Source Site ID you want to migrate from');
+        $this->addOption('target-idsite', null, InputOption::VALUE_OPTIONAL, 'Target Site ID you want to migrate to');
         $this->addOption('target-db-host', null, InputOption::VALUE_REQUIRED, 'Target database host');
         $this->addOption('target-db-username', null, InputOption::VALUE_REQUIRED, 'Target database username');
         $this->addOption('target-db-password', null, InputOption::VALUE_OPTIONAL, 'Target database password');
@@ -86,6 +87,11 @@ class Migrate extends ConsoleCommand
 
         $request = new Request();
         $request->sourceIdSite = $idSite;
+
+        if ($input->getOption('target-idsite')) {
+            $targetIdSite = (int) $input->getOption('target-idsite');
+            $request->targetIdSite = $targetIdSite;
+        }
 
         $migrations = new Migrations();
         if ($input->getOption('dry-run')) {

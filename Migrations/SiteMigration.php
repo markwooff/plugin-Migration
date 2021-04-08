@@ -25,7 +25,14 @@ class SiteMigration extends BaseMigration
     {
         $row = Db::fetchRow('SELECT * FROM ' . Common::prefixTable('site') . ' WHERE idsite = ?', array($request->sourceIdSite));
         unset($row['idsite']);
-        $request->targetIdSite = $targetDb->insert('site', $row);
+        if ($request->targetIdSite) {
+            $row['idsite'] = $request->targetIdSite;
+        }
+
+        $targetSite = $targetDb->fetchRow('SELECT * FROM ' . Common::prefixTable('site') . ' WHERE idsite = ?', array($request->targetIdSite));
+        if (empty($targetSite)) {
+            $request->targetIdSite = $targetDb->insert('site', $row);
+        }
 
         $this->log(sprintf('Target site is %s', $request->targetIdSite));
     }
