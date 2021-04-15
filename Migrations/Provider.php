@@ -17,11 +17,10 @@ class Provider
      * @param $skipArchives
      * @return BaseMigration[]
      */
-    public function getAllMigrations($skipLogs, $skipArchives)
+    public function getAllMigrations($skipLogs, $skipArchives, $skipUrls)
     {
         $migrations = [
             new SiteMigration(),
-            new SiteUrlMigration(),
             new SiteSettingMigration(),
             new GoalsMigration(),
             new SegmentsMigration(),
@@ -32,6 +31,10 @@ class Provider
         if ($pluginManager->isPluginActivated('CustomDimensions')
             && $pluginManager->isPluginLoaded('CustomDimensions')) {
             $migrations[] = new CustomDimensionMigration();
+        }
+
+        if (!$skipUrls) {
+            $migrations[] = new SiteUrlMigration();
         }
 
         if (!$skipLogs) {

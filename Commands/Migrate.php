@@ -41,6 +41,9 @@ class Migrate extends ConsoleCommand
         $this->addOption('target-db-port', null, InputOption::VALUE_REQUIRED, 'Target database port', '3306');
         $this->addOption('skip-logs', null, InputOption::VALUE_NONE, 'Skip migration of logs');
         $this->addOption('skip-archives', null, InputOption::VALUE_NONE, 'Skip migration of archives');
+        $this->addOption('skip-urls', null, InputOption::VALUE_NONE, 'Skip migration of site urls');
+        $this->addOption('from-date', null, InputOption::VALUE_OPTIONAL, 'Timestamp to start migrating data from, in YYYY-MM-DD format');
+        $this->addOption('to-date', null, InputOption::VALUE_OPTIONAL, 'Timestamp to end migrating data from, in YYYY-MM-DD format');
         $this->addOption('dry-run', null, InputOption::VALUE_NONE, 'Enable debug mode where it does not insert anything.');
         $this->addOption('disable-db-transactions', null, InputOption::VALUE_NONE, 'Disable the usage of MySQL database transactions');
     }
@@ -72,7 +75,7 @@ class Migrate extends ConsoleCommand
         $errors = array();
 
         $migrationsProvider = new Provider();
-        $allMigrations = $migrationsProvider->getAllMigrations($input->getOption('skip-logs'), $input->getOption('skip-archives'));
+        $allMigrations = $migrationsProvider->getAllMigrations($input->getOption('skip-logs'), $input->getOption('skip-archives'), $input->getOption('skip-urls'));
         foreach ($allMigrations as $migration) {
             $errors = array_merge($errors, $migration->validateStructure($targetDb));
             $migration->onLog(array($this, 'logMessage'));
@@ -91,6 +94,16 @@ class Migrate extends ConsoleCommand
         if ($input->getOption('target-idsite')) {
             $targetIdSite = (int) $input->getOption('target-idsite');
             $request->targetIdSite = $targetIdSite;
+        }
+
+        if ($fromDate = $input->getOption('from-date')) {
+            $date = Date::factory($fromDate . ' 00:00:00');
+            $request->fromDate = $date->getDatetime();
+        }
+
+        if ($toDate = $input->getOption('to-date')) {
+            $date = Date::factory($toDate . ' 23:59:59');
+            $request->toDate = $date->getDatetime();
         }
 
         $migrations = new Migrations();

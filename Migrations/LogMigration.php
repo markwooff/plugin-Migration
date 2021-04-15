@@ -27,7 +27,7 @@ class LogMigration extends BaseMigration
 
     public function migrate(Request $request, TargetDb $targetDb)
     {
-        $numVisits = Db::fetchOne('SELECT count(*) FROM ' . Common::prefixTable('log_visit') . ' WHERE idsite = ?', array($request->sourceIdSite));
+        $numVisits = Db::fetchOne('SELECT count(*) FROM ' . Common::prefixTable('log_visit') . ' WHERE idsite = ? AND visit_first_action_time >= ? AND visit_first_action_time <= ?', array($request->sourceIdSite, $request->fromDate, $request->toDate));
         $this->log(sprintf('Found %s visits', $numVisits));
 
         if (!$numVisits) {
@@ -41,7 +41,7 @@ class LogMigration extends BaseMigration
 
         $loggedAt = array(0.05, 0.1, 0.2, 0.4, 0.6, 0.8, 0.9);
 
-        foreach ($batchQuery->generateQuery('SELECT * FROM ' . Common::prefixTable('log_visit') . ' WHERE idsite = ? ORDER BY idvisit ASC',  array($request->sourceIdSite)) as $visitRows) {
+        foreach ($batchQuery->generateQuery('SELECT * FROM ' . Common::prefixTable('log_visit') . ' WHERE idsite = ? AND visit_first_action_time >= ? AND visit_first_action_time <= ? ORDER BY idvisit ASC',  array($request->sourceIdSite, $request->fromDate, $request->toDate)) as $visitRows) {
             $count += count($visitRows);
             $this->migrateVisits($visitRows, $request, $logActionMigration, $targetDb);
 
@@ -59,6 +59,7 @@ class LogMigration extends BaseMigration
     {
         $visitorIdMap = array();
         $visitorLinkActionMap = array();
+        $this->log(sprintf('Migrating %s visits', count($visitRows)));
         foreach ($visitRows as $row) {
             $oldIdVisit = $row['idvisit'];
             $row['idsite'] = $request->targetIdSite;
@@ -75,6 +76,7 @@ class LogMigration extends BaseMigration
 
         $batchQuery = new BatchQuery();
         foreach ($batchQuery->generateQuery('SELECT * FROM ' . Common::prefixTable('log_link_visit_action') . ' WHERE idvisit in ('.$visitorIds.') ORDER BY idlink_va ASC') as $actionRows) {
+            $this->log(sprintf('Migrating %s visit actions', count($actionRows)));
             foreach ($actionRows as $row) {
                 $oldIdLinkAction = $row['idlink_va'];
                 $row['idvisit'] = $visitorIdMap[$row['idvisit']];
